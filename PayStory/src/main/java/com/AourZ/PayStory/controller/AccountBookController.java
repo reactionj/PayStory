@@ -1,6 +1,5 @@
 package com.AourZ.PayStory.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -9,6 +8,7 @@ import java.util.HashMap;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.jsp.tagext.TryCatchFinally;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -16,7 +16,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.AourZ.PayStory.model.AccountBookBudgetVO;
 import com.AourZ.PayStory.model.AccountBookVO;
@@ -46,58 +45,62 @@ public class AccountBookController {
 
 	/* 대시보드 메인 - 일반 가계부 */
 	@RequestMapping("/accountBook/myMain")
-	public String myMain(HttpServletRequest request, HttpServletResponse response, Model model) throws IOException {
-		// session 정보 가져오기
-		HttpSession session = request.getSession();
-		String signInMemberNo = (String) session.getAttribute("memberNo"); // 회원 번호
+	public String myMain(HttpServletRequest request, HttpServletResponse response, Model model) {
+		try {
+			// session 정보 가져오기
+			HttpSession session = request.getSession();
+			String signInMemberNo = (String) session.getAttribute("memberNo"); // 회원 번호
 
-		// 로그인 정보 확인
-		if (signInMemberNo == null) {
+			// 로그인 정보 확인
+			if (signInMemberNo == null) {
 
-			response.setContentType("text/html; charset=UTF-8");
+				response.setContentType("text/html; charset=UTF-8");
 
-			PrintWriter out = response.getWriter();
+				PrintWriter out = response.getWriter();
 
-			out.println("<script>alert('로그인 정보가 정확하지 않습니다.'); location.href='/index';</script>");
+				out.println("<script>alert('로그인 정보가 정확하지 않습니다.'); location.href='/index';</script>");
 
-			out.flush();
+				out.flush();
+			}
+
+			// 가계부 정보 가져오기
+			AccountBookVO accountBookInfo = accountBookService.selectMyAccountBook(signInMemberNo, false);
+
+			int accountBookNo = accountBookInfo.getAccountBookNo(); // 가계부 번호
+			String accountBookTitle = accountBookInfo.getAccountBookTitle(); // 가계부 타이틀
+			boolean isShared = accountBookInfo.getIsShared(); // 가계부 구분 - 내 가계부
+
+			model.addAttribute("accountBookTitle", accountBookTitle);
+			model.addAttribute("isShared", isShared);
+
+			// session 업데이트 (가계부 번호 추가)
+			session.setAttribute("accountBookNo", accountBookNo);
+
+			// 현재 년-월 (시스템 시간 기준)
+			String date = methodList.nowDate();
+
+			// 예산
+			AccountBookBudgetVO budget = accountBookService.selectAccountBookBudget(accountBookNo, date);
+			if (budget != null) {
+				model.addAttribute("budget", budget.getBudgetAmount());
+			}
+
+			// 총 수입 (당월 총 건수, 총 금액)
+			ArrayList<TagTotalVO> income = methodList.selectTagTotalList("income", accountBookNo, "date", "month", date);
+			if (income != null && income.size() > 0) {
+				model.addAttribute("incomeTotalAmount", income.get(0).getSum());
+			}
+
+			// 총 지출 (당월 총 건수, 총 금액)
+			ArrayList<TagTotalVO> expenditure = methodList.selectTagTotalList("expenditure", accountBookNo, "date", "month",
+					date);
+			if (expenditure != null && expenditure.size() > 0) {
+				model.addAttribute("expenditureTotalAmount", expenditure.get(0).getSum());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
-		// 가계부 정보 가져오기
-		AccountBookVO accountBookInfo = accountBookService.selectMyAccountBook(signInMemberNo, false);
-
-		int accountBookNo = accountBookInfo.getAccountBookNo(); // 가계부 번호
-		String accountBookTitle = accountBookInfo.getAccountBookTitle(); // 가계부 타이틀
-		boolean isShared = accountBookInfo.getIsShared(); // 가계부 구분 - 내 가계부
-
-		model.addAttribute("accountBookTitle", accountBookTitle);
-		model.addAttribute("isShared", isShared);
-
-		// session 업데이트 (가계부 번호 추가)
-		session.setAttribute("accountBookNo", accountBookNo);
-
-		// 현재 년-월 (시스템 시간 기준)
-		String date = methodList.nowDate();
-
-		// 예산
-		AccountBookBudgetVO budget = accountBookService.selectAccountBookBudget(accountBookNo, date);
-		if (budget != null) {
-			model.addAttribute("budget", budget.getBudgetAmount());
-		}
-
-		// 총 수입 (당월 총 건수, 총 금액)
-		ArrayList<TagTotalVO> income = methodList.selectTagTotalList("income", accountBookNo, "date", "month", date);
-		if (income != null && income.size() > 0) {
-			model.addAttribute("incomeTotalAmount", income.get(0).getSum());
-		}
-
-		// 총 지출 (당월 총 건수, 총 금액)
-		ArrayList<TagTotalVO> expenditure = methodList.selectTagTotalList("expenditure", accountBookNo, "date", "month",
-				date);
-		if (expenditure != null && expenditure.size() > 0) {
-			model.addAttribute("expenditureTotalAmount", expenditure.get(0).getSum());
-		}
-
 		return "accountBook/main";
 	}
 
@@ -361,53 +364,40 @@ public class AccountBookController {
 
 	/* 지출 항목 추가 */
 	@ResponseBody
-	@RequestMapping("/accountBook/expenditure/")
-	public int addExpenditure(@RequestParam("expenditureDate") String date,
-			@RequestParam(value = "expenditureImage", required = false) MultipartFile file,
-			@RequestParam("expenditureSource") String source, @RequestParam("expenditureMemo") String memo,
-			@RequestParam("expenditureAddress") String address, @RequestParam("expenditureAmount") int totalAmount,
-			@RequestParam("tagNo") String tagNo, @RequestParam("expenditureItemName") String[] nameArray,
-			@RequestParam("expenditureItemPrice") int[] priceArray, HttpSession session) throws IOException {
-
-		// 파일 업로드 및 파일 이름 지정
-		String fileName = null;
-		if (file != null) {
-			String uploadPath = "C:/PayStory/PayStory/src/main/resources/static/file/receipt/";
-
-			String originalFileName = file.getOriginalFilename();
-			fileName = originalFileName;
-			String filePathName = uploadPath + originalFileName;
-			// String uploadFileName = session.getAttribute("memberNo") +"_"+
-			// session.getAttribute("accountBookNo")+"_"+originalFileName;
-			// String filePathName = uploadPath + uploadFileName;
-			File file1 = new File(filePathName);
-
-			file.transferTo(file1);
-		}
-
-		ExpenditureVO vo = new ExpenditureVO();
-		vo.setExpenditureDate(date);
-		vo.setExpenditureImage(fileName);
-		vo.setExpenditureSource(source);
-		vo.setExpenditureMemo(memo);
-		vo.setExpenditureAddress(address);
-		vo.setExpenditureAmount(totalAmount);
-		vo.setTagNo(tagNo);
-
-		accountBookService.insertExpenditure(vo);
-		int expenditureNo = vo.getExpenditureNo();
-
-		if (expenditureNo != 0) {
+	@RequestMapping("/accountBook/expenditure")
+	public int addExpenditure(
+			@RequestParam("expenditureItemName") String[] itemArray,
+			@RequestParam("expenditureItemPrice") int[] priceArray,
+			@RequestParam("tagNo") String tagNo,
+			@RequestParam("memo") String memo,
+			ExpenditureVO expenditureVO,
+			HttpSession session) throws IOException {
+		
+		// expenditureVO.setAccountBookNo((int) session.getAttribute("accountBookNo"));
+		System.out.println("====== VO 확인 ======");
+		System.out.println(expenditureVO.getExpenditureAddress());
+		System.out.println(expenditureVO.getExpenditureDate());
+		System.out.println(expenditureVO.getExpenditureImage());
+		System.out.println(expenditureVO.getExpenditureSource());
+		expenditureVO.setExpenditureMemo(memo);
+		expenditureVO.setTagNo(tagNo);
+		
+		accountBookService.insertExpenditure(expenditureVO);
+		int expenditureNo = expenditureVO.getExpenditureNo();
+		
+		if(expenditureNo != 0) {
 			ArrayList<ExpenditureItemVO> expenditureItemList = new ArrayList<ExpenditureItemVO>();
-			for (int i = 0; i < nameArray.length; i++) {
-				ExpenditureItemVO vo2 = new ExpenditureItemVO();
-				vo2.setExpenditureNo(expenditureNo);
-				vo2.setExpenditureItemName(nameArray[i]);
-				vo2.setExpenditureItemPrice(priceArray[i]);
-				expenditureItemList.add(vo2);
+			for(int i=0; i<itemArray.length; i++) {
+				ExpenditureItemVO ItemVO = new ExpenditureItemVO();
+				ItemVO.setExpenditureNo(expenditureNo);
+				ItemVO.setExpenditureItemName(itemArray[i]);
+				ItemVO.setExpenditureItemPrice(priceArray[i]);
+				expenditureItemList.add(ItemVO);
 			}
+			expenditureVO.setItemList(expenditureItemList);
 			accountBookService.insertExpenditureItem(expenditureItemList);
 		}
+		
 		return expenditureNo;
 	}
 
