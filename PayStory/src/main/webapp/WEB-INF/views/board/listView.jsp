@@ -19,6 +19,7 @@
 
 	 <!-- CSS : main -->
     <link href="<c:url value='/main/css/board/listView.css'/>" rel="stylesheet">
+    <style>.noticeBoardList{cursor:pointer;}</style>
 </head>
 <body id="page-top">
     <!-- Page Wrapper -->
@@ -45,13 +46,54 @@
                         <div class="card-header py-3 d-flex justify-content-between">
                         	<!-- 게시판 header : 글쓰기 버튼, 카테고리, 검색 -->
                         	<nav class="nav boardCategory">
-							  <a class="nav-link active" data-ctgNo="*">전체</a>
-							  <a class="nav-link" data-ctgNo="ctgNotice">공지</a>
-							  <a class="nav-link" data-ctgNo="ctgQA">질문</a>
-							  <a class="nav-link" data-ctgNo="ctgInfo">정보공유</a>
-							  <a class="nav-link" data-ctgNo="ctgFree">자유게시판</a>
+                        		<c:choose>
+                        			<c:when test="${ ctgNo eq 'bc001' }">
+	                       				<a class="nav-link" data-ctgNo="*">전체</a>
+									 	<a class="nav-link active" data-ctgNo="bc001">공지</a>
+									 	<a class="nav-link" data-ctgNo="bc002">질문</a>
+									 	<a class="nav-link" data-ctgNo="bc003">정보공유</a>
+									 	<a class="nav-link" data-ctgNo="bc004">자유게시판</a>
+								 	</c:when>
+                        			<c:when test="${ ctgNo eq 'bc002' }">
+	                       				<a class="nav-link" data-ctgNo="*">전체</a>
+									 	<a class="nav-link" data-ctgNo="bc001">공지</a>
+									 	<a class="nav-link active" data-ctgNo="bc002">질문</a>
+									 	<a class="nav-link" data-ctgNo="bc003">정보공유</a>
+									 	<a class="nav-link" data-ctgNo="bc004">자유게시판</a>
+								 	</c:when>
+                        			<c:when test="${ ctgNo eq 'bc003' }">
+	                       				<a class="nav-link" data-ctgNo="*">전체</a>
+									 	<a class="nav-link" data-ctgNo="bc001">공지</a>
+									 	<a class="nav-link" data-ctgNo="bc002">질문</a>
+									 	<a class="nav-link active" data-ctgNo="bc003">정보공유</a>
+									 	<a class="nav-link" data-ctgNo="bc004">자유게시판</a>
+								 	</c:when>
+                        			<c:when test="${ ctgNo eq 'bc004' }">
+	                       				<a class="nav-link" data-ctgNo="*">전체</a>
+									 	<a class="nav-link" data-ctgNo="bc001">공지</a>
+									 	<a class="nav-link" data-ctgNo="bc002">질문</a>
+									 	<a class="nav-link" data-ctgNo="bc003">정보공유</a>
+									 	<a class="nav-link active" data-ctgNo="bc004">자유게시판</a>
+								 	</c:when>
+                        			<c:otherwise>
+	                       				<a class="nav-link active" data-ctgNo="*">전체</a>
+									 	<a class="nav-link" data-ctgNo="bc001">공지</a>
+									 	<a class="nav-link" data-ctgNo="bc002">질문</a>
+									 	<a class="nav-link" data-ctgNo="bc003">정보공유</a>
+									 	<a class="nav-link" data-ctgNo="bc004">자유게시판</a>
+								 	</c:otherwise>
+                        		</c:choose>
 							</nav>
-                        	<a href="<c:url value='/board/write'/>" class="btn btn-primary" >글쓰기</a>	
+                        	<c:choose>
+                        		<c:when test="${ ctgNo ne 'bc001' }">
+	                        		<a href="<c:url value='/board/write'/>" class="btn btn-primary" >글쓰기</a>
+                        		</c:when>
+                        		<c:otherwise>
+                        			<c:if test="${ sessionScope.memberRank eq '3' }">
+		                        		<a href="<c:url value='/board/write'/>" class="btn btn-primary" >글쓰기</a>
+                        			</c:if>
+                        		</c:otherwise>
+                        	</c:choose>	
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="overflow: hidden;">
@@ -65,42 +107,36 @@
 			                                            <th>카테고리</th>
 			                                            <th>제목</th>
 			                                            <th>작성자</th>
-			                                            <th>조회</th>
 			                                            <th>날짜</th>
+			                                            <th>조회</th>
 			                                        </tr>
 			                                    </thead>
 			                                    <tbody>
-			                                    	<%-- <tr>
-	        											<td><a href="<c:url value='/board/view'/>">1</a></td>
-										        		<td>공지</td>
-										        		<td><a href="<c:url value='/board/view'/>">공유가계부 사용방법</a></td>
-										        		<td>관리자</td>
-										        		<td>15</td>
-										        		<td class="d-flex justify-content-between">
-										        			2022-02-20
-										        			<a href="<c:url value='/board/delete'/>"><i class="fa far fa-trash-alt"></i></a>
-										        		</td>
-													</tr>
-			                                    	<tr>
-	        											<td><a href="<c:url value='/board/view'/>">2</a></td>
-										        		<td>공지</td>
-										        		<td>영수증 AI 사용방법</td>
-										        		<td>관리자</td>
-										        		<td>100</td>
-										        		<td>2022-02-20</td>
-													</tr> --%>
-				                                    <c:forEach var="list" items="${boardList}" varStatus="status">
+                                            		<!-- 상단 공지사항 -->		
+													<c:forEach var="noticeBoardList" items="${noticeBoardList}" varStatus="status" >															
+			        									<tr class="boardList">
+			        										<td><input type="hidden" value='${noticeBoardList.boardNo}'/>${status.count}</td>
+		        											<td>공지사항</td>
+											        		<td>[공지]  ${noticeBoardList.boardTitle}</td>
+											        		<td>PayStory 관리자</td>
+											        		<td>${noticeBoardList.boardViews}</td>
+											        		<td>${noticeBoardList.boardDate}</td>
+														</tr>
+													</c:forEach>
+				                                    
+                                            		<c:forEach var="list" items="${boardList}" varStatus="status">
 			        									<tr class="boardList">
 		        											<td><input type="hidden" value='${list.boardNo}'/>${status.count}</td>
-											        		<td>${list.boardCategoryNo}</td>
+											        		<td>${list.boardCategoryName}</td>
 											        		<td>${list.boardTitle}</td>
-											        		<td>${list.memberNo}</td>
-											        		<td>${list.boardViews}</td>
+											        		<td>${list.memberName}</td>
 											        		<td>${list.boardDate}</td>
+											        		<td><input type="hidden" value='${list.boardViews}'/>${list.boardViews}</td>
 														</tr>
 													</c:forEach>
 			                                    </tbody>
-			                                </table>                                		
+			                                </table> 
+			                                                               		
                                 		</div>
                                 	</div>
                                 </div>

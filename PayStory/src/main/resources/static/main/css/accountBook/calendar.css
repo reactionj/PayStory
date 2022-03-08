@@ -1,16 +1,11 @@
 @charset "UTF-8";
 
-/* 공통 */
-#calendarBtnBox i {
-	color: var(--gray);
-}
-
-#yearMonth {
-	color: rgba(0, 0, 0, 0.9);
-}
-
-#otherBtnBox {
-	gap: 5px;
+/* 공통 / A, B */
+.dateSel div.infoBox, .dateSel div.emptyBox {
+    min-height: 90px;
+    font-size: 13pt;
+    font-weight: bold;
+    border-radius: 5px;
 }
 
 .today {
@@ -54,47 +49,17 @@
 	border: 1px solid var(--dark);
 	z-index: 10;
 }
-
-.detailBoxClose {
-	top: 4%;
-	right: 9%;
-}
-
-.border {
-	border-radius: 5px;
-}
-
-.border-color-default {
-	border: 1px solid #b5b1b1;
-}
-
-.border-color-black {
-	border: 1px solid black !important;
-}
-
-.border-color-white {
-	border: 1px solid white;
-}
-
-.default-cursor {
-	cursor: default;
-}
-
-.pointer-cursor {
-    cursor: pointer;
-}
-
-.help-cursor {
-	cursor: help;
+.tagIncomeListBox th, .tagIncomeListBox td,
+.tagExpenditureListBox th, .tagExpenditureListBox td {
+	padding: 0.5rem !important;
 }
 
 
-/* 달력 A */
+/* A */
 .daySel.typeA {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-gap: 15px;
 }
 .daySel.typeA div:first-child, .daySel.typeA div:last-child {
     background: #ffb500;
@@ -110,13 +75,6 @@
 .dateSel.typeA {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-gap: 15px;
-}
-.dateSel.typeA div.infoBox {
-    min-height: 90px;
-    font-size: 13pt;
-    font-weight: bold;
-    border-radius: 5px;
 }
 
 .date.typeA {
@@ -124,9 +82,12 @@
 }
 
 
-/* 달력 B */
-.daySel.typeB tr th:first-child div, .daySel.typeB tr th:last-child div {
-    background: #ffb500;
+/* B / C */
+.daySel.typeB tr th:first-child, .daySel.typeB tr th:last-child {
+    color: #ffb500;
+}
+.daySel.typeB tr th {
+	color: #2768fa;
 }
 .daySel.typeB div {
     color: white;
@@ -136,19 +97,6 @@
     text-align: center;
 }
 
-.dateSel.typeB div.infoBox {
-    min-height: 90px;
-    font-size: 11pt;
-    font-weight: bold;
-    border-radius: 5px;
-}
-.dateSel td {
-	padding: 1px;
-}
-
 .date.typeB {
 	width: 20px;
 }
-
-
-/* 달력 C */

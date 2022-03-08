@@ -1,18 +1,20 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<title>PayStory 가계부 - 상세 조회</title>
+		<title>PayStory 가계부 - 대시보드 : 상세 내역 조회</title>
 		
 		<%-------- CSS : Custom --------%>
+		<link href="<c:url value='/main/css/accountBook/common.css' />" rel="stylesheet" type="text/css">
 		<link href="<c:url value='/main/css/accountBook/calendar.css' />" rel="stylesheet" type="text/css">
 		<link href="<c:url value='/main/css/accountBook/chart.css' />" rel="stylesheet" type="text/css">
-		<link href="<c:url value='/main/css/accountBook/detailView.css' />" rel="stylesheet" type="text/css">
+		<link href="<c:url value='/main/css/accountBook/color.css' />" rel="stylesheet" type="text/css">
 		<link href="<c:url value='/main/css/accountBook/detailViewList.css' />" rel="stylesheet" type="text/css">
 		
 		<%-------- CSS : Bootstrap --------%>
@@ -24,11 +26,14 @@
 		<script src="<c:url value='/bootstrap/vendor/jquery/jquery.min.js' />"></script>
 		
 		<%-------- JS : Custom ------%>
-		<script src="<c:url value='/main/js/accountBook/calendarEtc.js' />" type="text/javascript"></script>
-		<script src="<c:url value='/main/js/accountBook/detailViewCalendar.js' />" type="text/javascript"></script>
+		<script src="<c:url value='/main/js/accountBook/etcMethod.js' />" type="text/javascript"></script>
+		<script src="<c:url value='/main/js/accountBook/detailView.js' />" type="text/javascript"></script>
 		<script src="<c:url value='/main/js/ajax/calendarAjax.js' />" type="text/javascript"></script>
 		<script src="<c:url value='/main/js/ajax/chartAjax.js' />" type="text/javascript"></script>
+		<script src="<c:url value='/main/js/ajax/budgetStatusAjax.js' />" type="text/javascript"></script>
 		<script src="<c:url value='/main/js/ajax/detailViewListAjax.js' />" type="text/javascript"></script>
+		<script src="<c:url value='/main/js/ajax/deleteItemAjax.js' />" type="text/javascript"></script>
+		<script src="<c:url value='/main/js/ajax/editItemAjax.js' />" type="text/javascript"></script>
 	</head>
 	<body>
 		<div id="wrapper">
@@ -45,7 +50,7 @@
 					<div class="container-fluid">
 						<div class="row">
 							<%-- 달력, 차트 --%>
-							<div class="col-lg-12 col-xl-4">
+							<div class="col-lg-12 col-xl-5">
 								<%-- 달력 --%>
 								<div class="card shadow mb-4">
 									<%-- Card Header --%>
@@ -67,49 +72,24 @@
 									</div>
 								</div>
 								
-								<%-- 차트 : 일일 통계 --%>
+								<%-- 차트 : 일별 통계 --%>
 								<div class="card shadow mb-4">
 									<%-- Card Header --%>
 									<div class="card-header p-3">
-										<input type="hidden" id="chartType" value="d">
-										<h6 class="m-0 font-weight-bold text-primary">일일 통계</h6>
+										<div class="d-flex justify-content-between">
+											<div id="chartMainTagBox" class="d-flex flex-gap-2">
+												<input type="hidden" id="chartType" value="d">
+												<h6 id="chartTab1"  class="chartTab m-0 pointer-cursor font-weight-bold text-primary selected">수입</h6>
+												<h6 id="chartTab2"  class="chartTab m-0 pointer-cursor">지출</h6>
+											</div>
+											<div id="budgetStatusBox" class="position-absolute d-none">
+												<%-- ajax --%>
+											</div>
+											<i class="budgetStatusBoxToggle fas fa-info-circle fa-lg pointer-cursor"></i>
+										</div>
 									</div>
 									<%-- Card Body --%>
 									<div class="card-body">
-										<div class="d-flex justify-content-between">
-											<div id="chartMainTagBox" class="d-flex">
-												<div id="chartTab1" class="pointer-cursor chartTab selected">수입</div>
-												<div id="chartTab2" class="pointer-cursor chartTab">지출</div>
-											</div>
-											<div id="budgetStatusBox" class="d-none">
-												<div class="row">
-													<div class="col-6">당월 예산 :&nbsp;</div>
-													<div class="col-6">
-														<fmt:formatNumber value="${budget}" pattern="#,###" />
-													</div>
-												</div>
-												<div class="row">
-													<div class="col-6">남은 예산 :&nbsp;</div>
-													<div class="col-6">
-														<c:set var="remainingBudget" value="${budget + incomeTotalAmount - expenditureTotalAmount}" />
-														<fmt:formatNumber value="${remainingBudget}" pattern="#,###" />
-													</div>
-												</div>
-												<div class="row">
-													<div class="col-6">총 수입금 :&nbsp;</div>
-													<div class="col-6">
-														<fmt:formatNumber value="${incomeTotalAmount}" pattern="#,###" />
-													</div>
-												</div>
-												<div class="row">
-													<div class="col-6">총 지출금 :&nbsp;</div>
-													<div class="col-6">
-														<fmt:formatNumber value="${expenditureTotalAmount}" pattern="#,###" />
-													</div>
-												</div>
-											</div>
-											<i class="budgetStatusBoxToggle fas fa-info-circle pointer-cursor"></i>
-										</div>
 										<div id="chartBox">
 											<%-- ajax --%>
 										</div>
@@ -118,19 +98,70 @@
 							</div>
 							
 							<%-- 일일 상세 내역 --%>
-							<div class="col-lg-12 col-xl-8">
+							<div class="col-lg-12 col-xl-7">
 								<div class="card shadow mb-4">
 									<%-- Card Header --%>
 									<div class="card-header d-flex justify-content-between p-3">
-										<h6 class="m-0 font-weight-bold text-primary">{년월일}</h6>
+										<h6 id="selectedDate" class="m-0 font-weight-bold text-primary">asd</h6>
 										<c:if test="${isShared eq true}">
-											<i class="fas fa-user-friends fa-lg pointer-cursor"></i>
-											<%-- 
-												소유자, 참여자 표시
-											 --%>
+											<c:if test="${fn:length(shareMemberInfoList) gt 1}">
+												<div id="shareMemberBox" class="position-absolute d-none">
+													<div class="table mb-0">
+														<div id="dataTable_wrapper" class="dataTables_wrapper dt-bootstrap4">
+															<div class="row">
+																<div class="col-sm-12">
+																	<i class="detailBoxClose re-position-1 fas fa-times position-absolute pointer-cursor"></i>
+																	<table class="table mb-0">
+																		<thead>
+																			<tr class="text-center">
+																				<th colspan="3">목록</th>
+																			</tr>
+																		</thead>
+																		<tbody class="shareMember">
+																			<c:forEach var="member" items="${shareMemberInfoList}" varStatus="status">
+																				<tr class="text-center">
+																					<c:choose>
+																						<c:when test="${status.index eq 0}">
+																							<td>
+																								<div class="profile-image rounded-circle border-color-yellow">
+																									<%--
+																									
+																										이미지 경로 확인 필요
+																									
+																									 --%>
+																									<%-- <img src="${member.memberImage}"> --%>
+																								</div>
+																							</td>
+																						</c:when>
+																						<c:otherwise>
+																							<td>
+																								<div class="profile-image rounded-circle border-color-blue">
+																									<%--
+																									
+																										이미지 경로 확인 필요
+																									
+																									 --%>
+																									<%-- <img src="${member.memberImage}"> --%>
+																								</div>
+																							</td>
+																						</c:otherwise>
+																					</c:choose>
+																					<td class="align-middle">${member.memberName}</td>
+																					<td class="align-middle">${member.memberEmail}</td>
+																				</tr>
+																			</c:forEach>
+																		</tbody>
+																	</table>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<i class="shareMemberBoxToggle fas fa-user-friends fa-lg pointer-cursor"></i>
+											</c:if>
 										</c:if>
 									</div>
-									<div id="detailViewListBox" class="card-body d-flex flex-column align-items-center">
+									<div id="detailViewListBox" class="card-body d-flex flex-column flex-gap-2 align-items-center">
 										<%-- ajax --%>
 									</div>
 								</div>

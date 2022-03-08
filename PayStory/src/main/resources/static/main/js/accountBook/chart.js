@@ -2,16 +2,16 @@
 Chart.defaults.global.defaultFontFamily = 'Nunito', '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
 Chart.defaults.global.defaultFontColor = '#858796';
 
-var ctx = document.getElementById("myPieChart");
+var ctx = document.getElementById("chartCanvas");
 
 var myPieChart = new Chart(ctx, {
 	type: 'doughnut',
 	data: {
-		labels: ["Direct", "Referral", "Social"],
+		labels: tagList,
 		datasets: [{
-			data: [55000, 30000, 15000],
-			backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
-			hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+			data: sumList,
+			backgroundColor: ['#4e73df', '#6f42c1', '#e83e8c', '#e74a3b', '#fd7e14', '#f6c23e', '#20c9a6', '#36b9cc', '#5a5c69', '#1cc88a'],
+			hoverBackgroundColor: ['#4e73df', '#6f42c1', '#e83e8c', '#e74a3b', '#fd7e14', '#f6c23e', '#20c9a6', '#36b9cc', '#5a5c69', '#1cc88a'],
 			hoverBorderColor: "rgba(234, 236, 244, 1)",
 		}],
 	},
@@ -30,6 +30,6 @@ var myPieChart = new Chart(ctx, {
 		legend: {
 			display: false
 		},
-		cutoutPercentage: 80,
+		cutoutPercentage: 70,
 	},
 });

@@ -1,6 +1,7 @@
 package com.AourZ.PayStory.controller;
 
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -28,8 +29,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
 import com.AourZ.PayStory.model.FileUtils;
-import com.AourZ.PayStory.model.LoginVO;
-import com.AourZ.PayStory.model.MemberVO;
+import com.AourZ.PayStory.model.member.LoginVO;
+import com.AourZ.PayStory.model.member.MemberVO;
 import com.AourZ.PayStory.service.IMemberService;
 
 @Controller
@@ -59,19 +60,18 @@ public class MemberController {
 			 rNum += (int)(Math.random() * 10);
 		 }
 		 
-		 String memberNo = rNum;
-		 
+		String memberNo = rNum;
+		
 		memberVO.setMemberPwd(hashedPw);
 		memberVO.setMemberNo(memberNo);
 		memberService.register(memberVO);
 		model.addAttribute("member", memberVO);
-		
 		 
-		rttr.addFlashAttribute("msg", "가입이 완료되었습니다.");
 		rttr.addAttribute("memberEmail", memberVO.getMemberEmail());
 		rttr.addAttribute("memberName", memberVO.getMemberName());
 		
 		return "redirect:/member/registerAuth";
+		
 	}
 	
 	@RequestMapping(value="/registerAuth",method= RequestMethod.GET)
@@ -80,7 +80,6 @@ public class MemberController {
 		
 		model.addAttribute("memberEmail", memberEmail);
 		model.addAttribute("memberName", memberName);
-		
 		
 		return "/member/registerAuth";
 	}
@@ -123,6 +122,13 @@ public class MemberController {
 		return null;
 	}
 	
+	@RequestMapping(value="/emailCnt", method=RequestMethod.POST)
+	@ResponseBody
+	public int emailCnt(String memberEmail) throws Exception {
+		int result = memberService.emailCnt(memberEmail);
+		return result;
+	}
+	
 	//  ****************** 로그인 ******************
 	@RequestMapping(value="/loginView",method= RequestMethod.GET)
 	public String loginView(@ModelAttribute("loginVO")LoginVO loginVO,HttpServletRequest request,Model model) throws Exception{
@@ -149,9 +155,18 @@ public class MemberController {
 			model.addAttribute("Auth", memberVO.getMemberAuth());
 			return "/member/registerReady";
 		}
+		
+		if(memberService.memberRankCheck(loginVO.getMemberEmail()) == 1) {
+			httpSession.invalidate();
+			model.addAttribute("sanctionTime", memberService.memberSanctionTime(memberVO.getMemberEmail()));
+			return "/member/suspended";
+		}
+		
 		// model.addAttribute로 member라는 key에 memberVO의 데이터를 담았다.
 		model.addAttribute("member", memberVO);
 		httpSession.setAttribute("memberNo", memberVO.getMemberNo()); // 2022.02.20 강성우추가... 세션으로 'sid'에 'memberNo'값 저장
+		httpSession.setAttribute("memberRank", memberVO.getMemberRank()); // 2022.03.08 박하영 추가 세션에 회원 권한 저장
+		
 		return "/accountBook/main";
 	}
 	
@@ -190,12 +205,14 @@ public class MemberController {
 
 	// 회원정보 수정로직
 	@RequestMapping(value="/infoUpdate", method=RequestMethod.POST)
-	public String infoUpdate(HttpServletRequest request,HttpSession session,MemberVO memberVO,Model model,RedirectAttributes rttr)throws Exception{
-				
-		memberService.infoUpdate(memberVO); 
-		session.setAttribute("login", memberVO);
-		rttr.addFlashAttribute("msg", "정보 수정이 완료되었습니다.");
-		return"/accountBook/main";
+	public String infoUpdate(HttpServletRequest request,HttpSession session, MemberVO memberVO, String memberName,Model model,RedirectAttributes rttr)throws Exception{		
+		MemberVO vo = (MemberVO) session.getAttribute("login");		
+		
+		vo.setMemberName(memberName);
+		memberService.infoUpdate(memberVO); 		
+		session.setAttribute("login", vo);
+			
+		return "/accountBook/main";
 	}
 	
 	// 비밀번호 수정로직
@@ -227,14 +244,93 @@ public class MemberController {
 	// 프로필사진
 	@RequestMapping(value="/updateImg", method=RequestMethod.POST)
 	public String updateImg(MultipartHttpServletRequest mpRequest, HttpSession session , String memberEmail)throws Exception {	
-		String memberImage = FileUtils.updateImg(mpRequest); 
+		String memberImage = FileUtils.updateImg(mpRequest, session); 
 		MemberVO memberVO = (MemberVO) session.getAttribute("login");		
-		memberService.updateImg(memberImage, memberEmail);		
+		memberService.updateImg(memberImage, memberEmail);	
 		memberVO.setMemberImage(memberImage);
 		session.setAttribute("login", memberVO);
 					
 		return "/accountBook/main";
 	}
+	
+	@RequestMapping(value="/deleteView", method=RequestMethod.GET)
+	public String deleteView() throws Exception{
+		return "/member/deleteView";
+	}
+    
+    @RequestMapping(value="/delete", method=RequestMethod.POST)
+	public String delete(String memberEmail,RedirectAttributes rttr,HttpSession session)throws Exception{
+		String msg = "이용해주셔서 감사합니다.";
+    	memberService.memberDelete(memberEmail);
+		session.invalidate();
+		rttr.addFlashAttribute("msg", msg);
+		return "redirect:/member/loginView";
+	}
+	
+	
+	// *********** 관리자 ***********
+	@RequestMapping(value="/master", method=RequestMethod.GET)
+	public String memberSanctionView(HttpSession session, Model model) throws Exception{
+		MemberVO memberVO = (MemberVO)session.getAttribute("login");
+		
+		if(memberVO.getMemberRank() != 3 || memberVO == null) {
+			session.invalidate();
+			return "/member/loginView";
+		}		
+		
+		List<MemberVO> memberList = memberService.memberList();
+		
+		model.addAttribute("memberList",memberList);
+		model.addAttribute("noticeBoardList",memberService.noticeBoardList());
+		return "/member/master";
+	}
+	
+	// 회원정지
+	@RequestMapping(value="/memberSanction", method=RequestMethod.POST)
+	public String memberSanction(Model model,MemberVO memberVO,String memberEmail,int sanctionTime) throws Exception{		
+		memberService.memberSanction(memberEmail,sanctionTime);	
+		
+		return "redirect:/member/master";
+	}
+	
+	// 회원정지해제
+	@RequestMapping(value="/memberSanctionCancel", method=RequestMethod.POST)
+	public String memberSanction(Model model,String memberEmail) throws Exception{		
+		memberService.memberSanctionCancel(memberEmail);	
+		
+		return "redirect:/member/master";
+	}
+	
+	// 관리자지정
+	@RequestMapping(value="/memberMaster", method=RequestMethod.POST)
+	public String memberMaster(String memberEmail)throws Exception{
+		memberService.memberMaster(memberEmail);
+		
+		return "redirect:/member/master";
+	}
+	
+	// 관리자취소
+	@RequestMapping(value="/memberMasterCancel", method=RequestMethod.POST)
+	public String memberMasterCancel(String memberEmail)throws Exception{
+		memberService.memberMasterCancel(memberEmail);
+		
+		return "redirect:/member/master";
+	}
+	
+	// 공지사항
+	@RequestMapping(value="/insertNotice", method=RequestMethod.POST)
+	public String insertNotice(int boardNo)throws Exception{
+		memberService.insertNotice(boardNo);
+		return "redirect:/member/master";
+	}
+	
+	@RequestMapping(value="/deleteNotice", method=RequestMethod.POST)
+	public String deleteNotice(int boardNo)throws Exception{
+		memberService.deleteNotice(boardNo);
+		return "redirect:/member/master";
+	}
+	
+	
 	
 }
 	

@@ -3,7 +3,7 @@
 
 <!DOCTYPE html>
 <html>
-<head><style>.text-gray-600 {font-size: 15px;width: 54px;}</style></head>
+<head><style>.text-gray-600 {font-size: 15px;width: 85px;text-align: center;}</style></head>
 	<body>
 		<jsp:include page="/WEB-INF/views/layout/profileModal.jsp" flush="true"/>
 	    <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
@@ -41,7 +41,7 @@
 		               <!-- userName -->
 		               <span class="mr-2 d-none d-lg-inline text-gray-600 small">${login.memberName}</span>
 		               <!-- userImg -->
-		               <img class="img-profile rounded-circle" src="<c:url value='/images/${login.memberImage}' />">
+		               <img class="img-profile rounded-circle" onerror='this.src="<c:url value='/main/images/blankprofile.png'></c:url>"' src="<c:url value='/images/member/${login.memberNo}/${login.memberImage}'/>">
 		           </a>
 		           <!-- Dropdown - User Information -->
 		            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
