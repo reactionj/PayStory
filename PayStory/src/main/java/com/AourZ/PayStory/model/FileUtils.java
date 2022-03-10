@@ -13,8 +13,9 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Component
 public class FileUtils {
-	private static final String filePath = "/usr/local/tomcat9/webapps/ROOT/WEB-INF/classes/static/paystory/images/"; // 파일이 저장될 서버 위치
-	// private static final String filePath = "C:/PayStory/images/"; // 로컬용
+	private static final String filePath = "/upload/"; // 파일이 저장될 서버 위치
+	//private static final String filePath = "/usr/local/tomcat9/webapps/ROOT/WEB-INF/classes/static/paystory/images/"; // 파일이 저장될 서버 위치
+	//private static final String filePath = "C:/PayStory/images/"; // 로컬용
 	
 	public static String updateImg(
 			MultipartHttpServletRequest mpRequest, HttpSession session) throws Exception{
@@ -55,8 +56,8 @@ public class FileUtils {
 	public static String[] uploadReceipt(MultipartFile multipartFile, HttpSession session) throws IOException {
 		String memberNo = (String) session.getAttribute("memberNo");
 		
-		// 회원번호별 새 폴더 생성
-		String uploadPath = filePath + "receipt/" + memberNo + "/";
+		// 가계부 번호별 새 폴더 생성
+		String uploadPath = filePath + "receipt/" + session.getAttribute("accountBookNo") + "/";
 
 		File file = new File(uploadPath);
 		if (file.exists() == false) {
@@ -69,8 +70,8 @@ public class FileUtils {
 		// 파일 중복 방지를 위한 UUID 생성
 		String storedFileName = getRandomString() + originalFileExtension;
 		
-		// 업로드 파일 이름 : "accountBookNo_파일이름"
-		String uploadFileName = session.getAttribute("accountBookNo") +"_"+storedFileName;
+		// 업로드 파일 이름 : "memberNo_UUID"
+		String uploadFileName = memberNo +"_"+ storedFileName;
 		String filePathName = uploadPath + uploadFileName;
 
 		File file1 = new File(filePathName);
